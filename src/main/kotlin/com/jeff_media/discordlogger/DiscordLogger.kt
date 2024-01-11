@@ -5,15 +5,13 @@ import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.GenericEvent
-import net.dv8tion.jda.api.events.message.MessageDeleteEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.events.message.MessageUpdateEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.requests.GatewayIntent
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-class DiscordLogger(val config: Config): EventListener {
+class DiscordLogger(val config: Config) : EventListener {
 
     private val logger = LoggerFactory.getLogger(DiscordLogger::class.java)
 
@@ -21,10 +19,18 @@ class DiscordLogger(val config: Config): EventListener {
         SENT, EDITED, DELETED;
 
         fun getPastTense(): String {
-            return when(this) {
+            return when (this) {
                 SENT -> "sent"
                 EDITED -> "edited"
                 DELETED -> "deleted"
+            }
+        }
+
+        fun getParantheses(): String {
+            return when (this) {
+                SENT -> ""
+                EDITED -> " (edited)"
+                DELETED -> " (deleted)"
             }
         }
     }
@@ -40,9 +46,9 @@ class DiscordLogger(val config: Config): EventListener {
     }
 
     override fun onEvent(event: GenericEvent) {
-        if(event is MessageReceivedEvent) {
+        if (event is MessageReceivedEvent) {
             logMessage(event.message)
-        } else if(event is MessageUpdateEvent) {
+        } else if (event is MessageUpdateEvent) {
             logMessage(event.message, MessageAction.EDITED)
         }
     }
@@ -51,22 +57,43 @@ class DiscordLogger(val config: Config): EventListener {
         val author = message.author
         val channel = message.channel
 
-        if(message.isWebhookMessage) return
-        if(message.isEphemeral) return
-        if(author.isBot) return
-        if(author.isSystem) return
-        if(channel.id == config.channelId) return
+        if (message.isWebhookMessage) return
+        if (message.isEphemeral) return
+        if (author.isBot) return
+        if (author.isSystem) return
+        if (channel.id == config.channelId) return
 
         val embed = EmbedBuilder()
-            .setTitle("${author.name} ${action.getPastTense()} @ ${channel.name}")
-            .addField("Author", author.asMention, true)
-            .addField("Timestamp", discordTimestamp(message.timeCreated), true)
-            .addField("Channel", channel.asMention, true)
-            .addField("Link", message.jumpUrl, true)
-            .addField("Message ${action.getPastTense()}", message.contentStripped.shorten(1000), false).build()
-        jda.getTextChannelById(config.channelId)?.sendMessageEmbeds(embed)?.queue()
+            .setTitle(
+                "${author.name} ${message.jumpUrl}${action.getParantheses()} @ ${
+                    discordTimestamp(
+                        message.timeCreated,
+                        "R"
+                    )
+                }"
+            )
+            .addField("Message ${action.getPastTense()}", message.contentStripped.shorten(1000), false)
 
-        logger.info("${author.name} ${action.getPastTense()} @ ${channel.name}: ${message.contentStripped.shorten(30)}")
+        var attachmentId = 1
+        for (file in message.attachments) {
+            embed.addField("Attachment ${attachmentId++}", file.url, false)
+        }
+
+        embed
+            .addBlankField(false)
+            .addField("Author Mention", author.asMention, true)
+            .addField("Author Name", author.name, true)
+            .addField("Author ID", author.id, true)
+            .addField("Time", discordTimestamp(message.timeCreated), true)
+            .addField("Channel Mention", channel.asMention, true)
+            .addField("Message URL", message.jumpUrl, true)
+            .addField("Message ID", message.id, true)
+
+
+
+        jda.getTextChannelById(config.channelId)?.sendMessageEmbeds(embed.build())?.queue()
+
+        logger.info("${author.name} # ${channel.name}${action.getParantheses()}: ${message.contentStripped.shorten(30)}")
 
     }
 
