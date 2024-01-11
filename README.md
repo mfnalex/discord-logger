@@ -8,5 +8,5 @@ Simple Discord bot to log a server's messages to a channel. This is useful if yo
 ## Running
 Run the .jar using Java 8 or newer and specify your bot token and the channel id you want to log to.
 ```bash
-java -jar -b &lt;bot-token&gt; -c &lt;channel-id&gt;
+java -jar -b <bot-token> -c <channel-id>
 ```
