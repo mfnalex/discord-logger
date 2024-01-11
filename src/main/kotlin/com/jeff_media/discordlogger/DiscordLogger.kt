@@ -72,6 +72,8 @@ class DiscordLogger(val config: Config) : EventListener {
                     )
                 }"
             )
+            //.setImage(author.avatarUrl)
+            .setThumbnail(author.avatarUrl)
             .addField("Message ${action.getPastTense()}", message.contentStripped.shorten(1000), false)
 
         var attachmentId = 1

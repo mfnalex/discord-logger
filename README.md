@@ -1,5 +1,7 @@
 Simple Discord bot to log a server's messages to a channel. This is useful if you have lots of channels and never know where a message came from when you hear the annoying discord notification sound.
 
+![img/img.png](img/img.png)
+
 ## Building
 ```bash
 ./gradlew build
